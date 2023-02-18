@@ -3,6 +3,13 @@
 # Example usage
 # request.sh <user.sh> {p|s}
 
+# Define colors you want
+COLOR_ENV='\033[1;33m'
+COLOR_LOCAL='\033[0;32m'
+COLOR_RESET='\033[0m'
+COLOR_ERROR='\033[31m'
+COLOR_DATA='\033[35m'
+
 left_echo()
 {
   echo "| $1"
@@ -10,9 +17,7 @@ left_echo()
 
 error_text()
 {
-  RED='\033[0;31m'
-  NC='\033[0m' # No Color
-  printf "${RED}$1${NC}\n"
+  printf "${COLOR_ERROR}$1${COLOR_RESET}\n"
 }
 
 help_prompt()
@@ -55,6 +60,24 @@ help()
   left_echo "./request.sh example.sh p"
   left_echo ""
   left_echo "=== End Help ========================"
+}
+
+extract_url()
+{
+  WIDGET_DATA=$(</dev/stdin)
+
+  # Use regex to get only the url from json
+  REGEX_CONNECT_URL='"(http[^, "]*)'
+  [[ $WIDGET_DATA =~ $REGEX_CONNECT_URL ]]
+
+  printf "\n${COLOR_ENV}(Environment URL) ${COLOR_RESET}\n"
+  echo "${BASH_REMATCH[1]}"
+
+  REGEX_CONNECT_URL='"http[s]*:\/\/[^, "\/]*\/([^, "]*)'
+  [[ $WIDGET_DATA =~ $REGEX_CONNECT_URL ]]
+
+  printf "\n${COLOR_LOCAL}(Local URL) ${COLOR_RESET}\n"
+  echo "http://localhost:3000/${BASH_REMATCH[1]}"
 }
 
 header
@@ -105,7 +128,8 @@ case $2 in
     "current_institution_guid": "INS-075dd710-ec98-4ad4-9df3-1be9a5151be9",
     "disable_institution_search": true,
     "ui_message_version": 4
-    }}';;
+    }}' | tail -n 1 | extract_url
+    ;;
 
   "s")
     echo "Using SSO/Wormhole"
@@ -115,7 +139,7 @@ case $2 in
     --header 'Accept: application/vnd.moneydesktop.sso.v3+json' \
     --header 'Accept-Language: en-US' \
     --header "MD-API-KEY: ${USER_CLIENT_API_KEY}" \
-    --data-raw '{"url": {"color_scheme":"dark","type": "connect_widget","mode":"verification", "disable_background_agg": true}}'
+    --data-raw '{"url": {"color_scheme":"dark","type": "connect_widget","mode":"verification", "disable_background_agg": true}}' | tail -n 1 | extract_url
     ;;
 
   *)
