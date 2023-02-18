@@ -1,33 +1,90 @@
 #!/bin/bash
 
 # Example usage
-# request.sh <userfile> [p|s]
+# request.sh <user.sh> {p|s}
 
-echo "============================================================================="
-echo "Connect CLI (alpha)"
-echo ""
-echo "Syntax:"
-echo "./request.sh <userfile> [p|s]"
-echo "p = Platform API"
-echo "s = SSO/Wormhole"
-echo ""
-echo "example usage to request Connect using the Platform API..."
-echo "./request.sh example.sh p"
-echo "============================================================================="
-echo ""
+left_echo()
+{
+  echo "| $1"
+}
 
-if [ "$1" = "" ]
-then
-  echo "============================================================================="
-  echo "A user.sh file must be provided.  You currently have these options in ./users"
+error_text()
+{
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  printf "${RED}$1${NC}\n"
+}
+
+help_prompt()
+{
+  error_text "Expected Syntax: 'request.sh <user.sh> {p|s}'"
+  error_text ""
+  error_text "To open the help menu use the '-h' argument"
+  error_text "request.sh -h"
+}
+
+header()
+{
+  left_echo "===================="
+  left_echo "Connect CLI (alpha)"
+  left_echo "===================="
   echo ""
-  echo "Copy example.sh, rename it, and provide your information to get started :)"
-  echo "============================================================================="
+}
+
+user_options()
+{
+  error_text "A user.sh file must be provided.  You currently have these options in ./users"
   ls ./users
+  echo ""
+}
+
+help()
+{
+  left_echo "=== Connect CLI Help ================"
+  left_echo ""
+  left_echo "This utility requires 2 params"
+  left_echo "1. The name of the shell script that exports ENV variables with user info: ex: 'example.sh'"
+  left_echo "2. An API option of either 'p' or 's'"
+  left_echo ""
+  left_echo "Syntax: 'request.sh <user.sh> {p|s}'"
+  left_echo ""
+  left_echo "p = Platform API"
+  left_echo "s = SSO/Wormhole API"
+  left_echo ""
+  left_echo "example usage to request Connect using the Platform API..."
+  left_echo "./request.sh example.sh p"
+  left_echo ""
+  left_echo "=== End Help ========================"
+}
+
+header
+
+# Print the help menu if requested
+if [ "$1" = "-h" ]
+then
+  help
   exit
 fi
 
+# No aruments provided
+if [ "$1" = "" ]
+then
+  user_options
+  help_prompt
+  exit 1
+fi
+
+# Invalid API argument
+if [ "$2" != "p" ] && [ "$2" != "s" ]
+then
+  error_text "A valid API option must be selected..."
+  echo ""
+  help_prompt
+  exit 1
+fi
+
 # Import ENV VARS from user file in ./users/<user>.sh
+# Using user provided values like this is likely dangerous
 source ./users/$1
 echo "Get URL for users ${USER_GUID}"
 
