@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Example usage
-# request.sh <user.sh> {p|s}
+# request.sh [-h|-l|-u] <user.sh> {p|s}
 
 # Define colors you want
 COLOR_ENV='\033[1;33m'
@@ -22,7 +22,7 @@ error_text()
 
 help_prompt()
 {
-  error_text "Expected Syntax: 'request.sh <user.sh> {p|s}'"
+  error_text "Expected Syntax: 'request.sh [-h|-l|-u] <user.sh> {p|s}'"
   error_text ""
   error_text "To open the help menu use the '-h' argument"
   error_text "request.sh -h"
@@ -39,7 +39,8 @@ header()
 user_options()
 {
   error_text "A user.sh file must be provided.  You currently have these options in ./users"
-  ls ./users
+  script_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+  ls $script_path/users
   echo ""
 }
 
@@ -51,10 +52,15 @@ help()
   left_echo "1. The name of the shell script that exports ENV variables with user info: ex: 'example.sh'"
   left_echo "2. An API option of either 'p' or 's'"
   left_echo ""
-  left_echo "Syntax: 'request.sh <user.sh> {p|s}'"
+  left_echo "Syntax: 'request.sh [-h|-l|-u] <user.sh> {p|s}'"
   left_echo ""
   left_echo "p = Platform API"
   left_echo "s = SSO/Wormhole API"
+  left_echo ""
+  left_echo "Options"
+  left_echo "h = Open help menu"
+  left_echo "l = Script will copy the local url to the clipboard"
+  left_echo "u = Script will copy the environment url to the clipboard"
   left_echo ""
   left_echo "example usage to request Connect using the Platform API..."
   left_echo "./request.sh example.sh p"
@@ -73,21 +79,52 @@ extract_url()
   printf "\n${COLOR_ENV}(Environment URL) ${COLOR_RESET}\n"
   echo "${BASH_REMATCH[1]}"
 
+  if [ $COPY_URL = true ]
+  then
+    echo -n "${BASH_REMATCH[1]}" | pbcopy
+  fi
+
   REGEX_CONNECT_URL='"http[s]*:\/\/[^, "\/]*\/([^, "]*)'
   [[ $WIDGET_DATA =~ $REGEX_CONNECT_URL ]]
 
   printf "\n${COLOR_LOCAL}(Local URL) ${COLOR_RESET}\n"
   echo "http://localhost:3000/${BASH_REMATCH[1]}"
+
+  if [ $COPY_LOCAL = true ]
+  then
+    echo -n "http://localhost:3000/${BASH_REMATCH[1]}" | pbcopy
+  fi
 }
 
-header
+# Move args as necessary when processing opts
+COPY_LOCAL=false
+COPY_URL=false
+while getopts "hlu" flag; do
+  case $flag in
+    l) echo "Copy Local URL to clipboard"
+      # Move positional argument assignments $2 is now $1
+      COPY_LOCAL=true
+      shift
+      ;;
+    u) echo "Copy URL to clipboard"
+      # Move positional argument assignments $2 is now $1
+      COPY_URL=true
+      shift
+      ;;
+    h)
+      help
+      exit
+      ;;
+    *)
+      echo "Option not recognized"
+      exit 1
+      ;;
+  esac
+done
 
-# Print the help menu if requested
-if [ "$1" = "-h" ]
-then
-  help
-  exit
-fi
+echo $COPY_LOCAL
+
+header
 
 # No aruments provided
 if [ "$1" = "" ]
@@ -107,8 +144,8 @@ then
 fi
 
 # Import ENV VARS from user file in ./users/<user>.sh
-# Using user provided values like this is likely dangerous
-source ./users/$1
+script_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+source $script_path/users/"$1"
 echo "Get URL for users ${USER_GUID}"
 
 case $2 in
@@ -125,7 +162,7 @@ case $2 in
     "color_scheme": "light",
     "mode": "verification",
     "widget_type": "connect_widget",
-    "current_institution_guid": "INS-075dd710-ec98-4ad4-9df3-1be9a5151be9",
+    "current_institution_guid": "INS-57db361e-a9d1-45e0-87e4-b67a968a15a0",
     "disable_institution_search": true,
     "ui_message_version": 4
     }}' | tail -n 1 | extract_url
