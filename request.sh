@@ -122,8 +122,6 @@ while getopts "hlu" flag; do
   esac
 done
 
-echo $COPY_LOCAL
-
 header
 
 # No aruments provided
@@ -152,7 +150,15 @@ case $2 in
   "p")
     echo "Using Platform API"
 
-    curl -i -X POST "https://api.${USER_ENVIRONMENT}.internal.mx/users/${USER_GUID}/widget_urls" \
+    SSO_PREFIX="api.${USER_ENVIRONMENT}"
+    SSO_DOMAIN="internal.mx"
+    if [ ${USER_ENVIRONMENT} = "int" ]
+    then
+      SSO_PREFIX="int-api"
+      SSO_DOMAIN="mx.com"
+    fi
+
+    curl -i -X POST "https://${SSO_PREFIX}.${SSO_DOMAIN}/users/${USER_GUID}/widget_urls" \
     -H 'Accept: application/vnd.mx.api.v1+json' \
     -H 'Content-Type: application/json' \
     -H 'Accept-Language: en-US' \
@@ -171,7 +177,15 @@ case $2 in
   "s")
     echo "Using SSO/Wormhole"
 
-    curl --location --request POST "https://sso.${USER_ENVIRONMENT}.internal.mx/${USER_CLIENT_EXTERNAL}/users/${USER_NAME_EXTERNAL}/urls.json" \
+    SSO_PREFIX="sso.${USER_ENVIRONMENT}"
+    SSO_DOMAIN="internal.mx"
+    if [ ${USER_ENVIRONMENT} = "int" ]
+    then
+      SSO_PREFIX="int-sso"
+      SSO_DOMAIN="moneydesktop.com"
+    fi
+
+    curl --location --request POST "https://${SSO_PREFIX}.${SSO_DOMAIN}/${USER_CLIENT_EXTERNAL}/users/${USER_NAME_EXTERNAL}/urls.json" \
     --header 'Content-Type: application/vnd.moneydesktop.sso.v3+json' \
     --header 'Accept: application/vnd.moneydesktop.sso.v3+json' \
     --header 'Accept-Language: en-US' \
